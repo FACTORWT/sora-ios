@@ -49,7 +49,7 @@ jobs:
 
       - name: Build and export IPA
         run: |
-          fastlane gym --workspace ios/App/App.xcworkspace --scheme App --configuration Release --export_method app-store --output_directory "$RUNNER_TEMP/out" --buildlog_path "$RUNNER_TEMP/logs" --api_key_path "$HOME/asc_key.json" --xcargs "-allowProvisioningUpdates"
+          fastlane run gym workspace:"ios/App/App.xcworkspace" scheme:"App" configuration:"Release" export_method:"app-store" output_directory:"$RUNNER_TEMP/out" buildlog_path:"$RUNNER_TEMP/logs" api_key_path:"$HOME/asc_key.json" xcargs:"-allowProvisioningUpdates"
 
       - name: Keep IPA
         if: always()
