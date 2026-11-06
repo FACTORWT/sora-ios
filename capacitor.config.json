@@ -1,0 +1,16 @@
+{
+  "appId": "com.soradestiny.app",
+  "appName": "SORA",
+  "webDir": "dist",
+  "server": {
+    "url": "https://soradestiny.com",
+    "allowNavigation": [
+      "soradestiny.com",
+      "*.soradestiny.com",
+      "accounts.google.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
