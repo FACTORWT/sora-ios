@@ -20,20 +20,16 @@ jobs:
         run: npm ci || npm install
 
       - name: Write ASC API key
-        run: |
-          mkdir -p ~/private_keys
-          printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
-          chmod 600 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
-          python3 - "$ASC_KEY_ID" "$ASC_ISSUER_ID" <<'PY'
-import json, os, sys
-key_id, issuer = sys.argv[1], sys.argv[2]
-data = {"key_id": key_id, "issuer_id": issuer, "key_filepath": os.path.expanduser(f"~/private_keys/AuthKey_{key_id}.p8"), "in_house": False}
-open(os.path.expanduser("~/asc_key.json"), "w").write(json.dumps(data))
-PY
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          mkdir -p "$HOME/private_keys"
+          printf '%s' "$ASC_KEY_P8" > "$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          printf '{"key_id":"%s","issuer_id":"%s","key_filepath":"%s/private_keys/AuthKey_%s.p8","in_house":false}' "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$HOME" "$ASC_KEY_ID" > "$HOME/asc_key.json"
+          wc -c "$HOME/asc_key.json"
 
       - name: Capacitor sync iOS
         run: npx cap sync ios
@@ -48,25 +44,12 @@ PY
 
       - name: Signing profile
         run: |
-          fastlane run get_provisioning_profile \
-            app_identifier:"com.soradestiny.app" \
-            team_id:"D695835P4T" \
-            api_key_path:"$HOME/asc_key.json" \
-            output_path:"$RUNNER_TEMP/profile" \
-            skip_certificate_verification:false || true
-          ls -la $RUNNER_TEMP/profile || true
+          fastlane run get_provisioning_profile app_identifier:"com.soradestiny.app" team_id:"D695835P4T" api_key_path:"$HOME/asc_key.json" output_path:"$RUNNER_TEMP/profile" skip_certificate_verification:false || true
+          ls -la "$RUNNER_TEMP/profile" || true
 
       - name: Build and export IPA
         run: |
-          fastlane gym \
-            --workspace ios/App/App.xcworkspace \
-            --scheme App \
-            --configuration Release \
-            --export_method app-store \
-            --output_directory "$RUNNER_TEMP/out" \
-            --buildlog_path "$RUNNER_TEMP/logs" \
-            --api_key_path "$HOME/asc_key.json" \
-            --xcargs "-allowProvisioningUpdates"
+          fastlane gym --workspace ios/App/App.xcworkspace --scheme App --configuration Release --export_method app-store --output_directory "$RUNNER_TEMP/out" --buildlog_path "$RUNNER_TEMP/logs" --api_key_path "$HOME/asc_key.json" --xcargs "-allowProvisioningUpdates"
 
       - name: Keep IPA
         if: always()
@@ -77,10 +60,10 @@ PY
           if-no-files-found: warn
 
       - name: Upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           IPA=$(find "$RUNNER_TEMP/out" -name "*.ipa" | head -1)
           echo "IPA: $IPA"
           xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
