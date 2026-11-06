@@ -21,16 +21,14 @@ jobs:
 
       - name: Write ASC API key
         env:
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
-          mkdir -p "$HOME/private_keys"
-          printf '%s' "$ASC_KEY_P8" > "$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8"
-          chmod 600 "$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8"
-          printf '{"key_id":"%s","issuer_id":"%s","key_filepath":"%s/private_keys/AuthKey_%s.p8","in_house":false}' "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$HOME" "$ASC_KEY_ID" > "$HOME/asc_key.json"
-          wc -c "$HOME/asc_key.json"
-
+          mkdir -p ~/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          chmod 600 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          python3 scripts/asc_key.py
       - name: Capacitor sync iOS
         run: npx cap sync ios
 
