@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -19,14 +19,21 @@ jobs:
       - name: Install JS deps
         run: npm ci || npm install
 
-      - name: Write App Store Connect API key
+      - name: Write ASC API key
         run: |
           mkdir -p ~/private_keys
-          echo "$ASC_KEY_P8" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
           chmod 600 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          python3 - "$ASC_KEY_ID" "$ASC_ISSUER_ID" <<'PY'
+import json, os, sys
+key_id, issuer = sys.argv[1], sys.argv[2]
+data = {"key_id": key_id, "issuer_id": issuer, "key_filepath": os.path.expanduser(f"~/private_keys/AuthKey_{key_id}.p8"), "in_house": False}
+open(os.path.expanduser("~/asc_key.json"), "w").write(json.dumps(data))
+PY
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
 
       - name: Capacitor sync iOS
         run: npx cap sync ios
@@ -36,61 +43,44 @@ jobs:
           cd ios/App
           pod install --repo-update
 
-      - name: Build archive
-        run: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
-            -archivePath $RUNNER_TEMP/SORA.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
-            -authenticationKeyID $ASC_KEY_ID \
-            -authenticationKeyIssuerID $ASC_ISSUER_ID \
-            clean archive
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      - name: Install fastlane
+        run: gem install fastlane --no-document
 
-      - name: Export IPA
+      - name: Signing profile
         run: |
-          cat > $RUNNER_TEMP/ExportOptions.plist <<'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>teamID</key><string>D695835P4T</string>
-            <key>signingStyle</key><string>automatic</string>
-            <key>uploadSymbols</key><true/>
-            <key>destination</key><string>export</string>
-          </dict>
-          </plist>
-          PLIST
-          xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/SORA.xcarchive \
-            -exportPath $RUNNER_TEMP/export \
-            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
-            -authenticationKeyID $ASC_KEY_ID \
-            -authenticationKeyIssuerID $ASC_ISSUER_ID
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          fastlane run get_provisioning_profile \
+            app_identifier:"com.soradestiny.app" \
+            team_id:"D695835P4T" \
+            api_key_path:"$HOME/asc_key.json" \
+            output_path:"$RUNNER_TEMP/profile" \
+            skip_certificate_verification:false || true
+          ls -la $RUNNER_TEMP/profile || true
 
-      - name: Upload IPA to App Store Connect
+      - name: Build and export IPA
         run: |
-          IPA=$(find $RUNNER_TEMP/export -name "*.ipa" | head -1)
-          echo "IPA: $IPA"
-          xcrun altool --upload-app -f "$IPA" -t ios \
-            --apiKey $ASC_KEY_ID --apiIssuer $ASC_ISSUER_ID
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          fastlane gym \
+            --workspace ios/App/App.xcworkspace \
+            --scheme App \
+            --configuration Release \
+            --export_method app-store \
+            --output_directory "$RUNNER_TEMP/out" \
+            --buildlog_path "$RUNNER_TEMP/logs" \
+            --api_key_path "$HOME/asc_key.json" \
+            --xcargs "-allowProvisioningUpdates"
 
-      - name: Keep IPA as artifact
+      - name: Keep IPA
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sora-ipa
-          path: ${{ runner.temp }}/export/*.ipa
+          path: ${{ runner.temp }}/out/*.ipa
           if-no-files-found: warn
+
+      - name: Upload to App Store Connect
+        run: |
+          IPA=$(find "$RUNNER_TEMP/out" -name "*.ipa" | head -1)
+          echo "IPA: $IPA"
+          xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
