@@ -24,6 +24,9 @@ jobs:
       - name: Install JS deps
         run: npm ci || npm install
 
+      - name: Quitar plugin RevenueCat
+        run: npm remove @revenuecat/purchases-capacitor --no-audit --no-fund || true
+
       - name: Write ASC API key
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
