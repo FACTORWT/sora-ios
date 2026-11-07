@@ -24,13 +24,19 @@ platform :ios do
     UI.message("Certificado: #{cert.class}")
 
     # 2) perfil de App Store para SORA
-    profile = get_provisioning_profile(
+    profile_path = get_provisioning_profile(
       api_key: api_key,
       app_identifier: "com.soradestiny.app",
       team_id: "D695835P4T",
       skip_certificate_verification: false
-    )
-    UI.message("Perfil: #{profile.name} / uuid #{profile.uuid}")
+    ).to_s
+
+    uuid = File.basename(profile_path, ".mobileprovision")
+    if uuid.length < 30
+      uuid = `security cms -D -i "#{profile_path}" 2>/dev/null | plutil -extract UUID raw - 2>/dev/null`.strip
+    end
+    UI.message("Perfil instalado: #{profile_path} -> uuid #{uuid}")
+    raise "No se pudo obtener el UUID del perfil" if uuid.length < 30
 
     # 3) compilar con firma manual usando ese perfil
     build_app(
@@ -40,7 +46,7 @@ platform :ios do
       export_method: "app-store",
       output_directory: "#{ENV['RUNNER_TEMP']}/out",
       buildlog_path: "#{ENV['RUNNER_TEMP']}/logs",
-      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{profile.uuid}'"
+      xcargs: "CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' PROVISIONING_PROFILE_SPECIFIER='#{uuid}'"
     )
 
     # 4) subir a App Store Connect
