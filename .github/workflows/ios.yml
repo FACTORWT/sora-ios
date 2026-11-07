@@ -2,8 +2,10 @@ name: Build SORA iOS
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
+
+concurrency:
+  group: sora-ios-build
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -49,6 +51,7 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
         run: fastlane beta
 
       - name: Guardar certificado para reutilizar
