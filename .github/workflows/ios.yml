@@ -54,8 +54,7 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
         run: fastlane beta
 
       - name: Guardar certificado para reutilizar
