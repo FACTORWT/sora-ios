@@ -51,6 +51,14 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: fastlane beta
 
+      - name: Guardar certificado para reutilizar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certificados-distribucion
+          path: ${{ runner.temp }}/certs
+          if-no-files-found: warn
+
       - name: Keep IPA
         if: always()
         uses: actions/upload-artifact@v4
