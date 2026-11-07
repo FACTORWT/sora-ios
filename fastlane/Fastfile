@@ -13,21 +13,16 @@ platform :ios do
       in_house: false
     )
 
-    get_certificates(
-      api_key: api_key,
-      team_id: "D695835P4T",
-      platform: "ios",
-      output_path: "#{ENV['RUNNER_TEMP']}/certs"
-    )
-
-    profile = get_provisioning_profile(
-      api_key: api_key,
+    match(
+      type: "appstore",
       app_identifier: "com.soradestiny.app",
       team_id: "D695835P4T",
-      skip_certificate_verification: false
+      api_key: api_key,
+      git_url: "https://x-access-token:#{ENV['GITHUB_TOKEN']}@github.com/FACTORWT/sora-ios.git",
+      git_branch: "certificates",
+      storage_mode: "git",
+      readonly: false
     )
-
-    UI.message("Perfil listo: #{profile.name} / #{profile.uuid}")
 
     build_app(
       workspace: "ios/App/App.xcworkspace",
@@ -35,8 +30,7 @@ platform :ios do
       configuration: "Release",
       export_method: "app-store",
       output_directory: "#{ENV['RUNNER_TEMP']}/out",
-      buildlog_path: "#{ENV['RUNNER_TEMP']}/logs",
-      xcargs: "-allowProvisioningUpdates CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=\"#{profile.name}\""
+      buildlog_path: "#{ENV['RUNNER_TEMP']}/logs"
     )
 
     upload_to_app_store(
