@@ -40,6 +40,14 @@ jobs:
       - name: Capacitor sync iOS
         run: npx cap sync ios
 
+      - name: Validar Info.plist
+        run: |
+          if ! plutil -lint ios/App/App/Info.plist; then
+            echo "Info.plist invalido tras cap sync, restaurando el del repositorio"
+            git checkout -- ios/App/App/Info.plist
+            plutil -lint ios/App/App/Info.plist
+          fi
+
       - name: Pod install
         run: |
           cd ios/App
