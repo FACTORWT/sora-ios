@@ -46,7 +46,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<false>false</false>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>SORA usa el micrófono solo si eliges dictar tu pregunta en voz alta.</string>
 	<key>NSCameraUsageDescription</key>
