@@ -23,6 +23,15 @@ platform :ios do
     )
     UI.message("Certificado: #{cert.class}")
 
+    # exportar el certificado con su llave privada para reutilizarlo despues
+    begin
+      sh("mkdir -p #{certs_dir}")
+      sh("security export -k #{Dir.home}/Library/Keychains/login.keychain-db -t identities -f pkcs12 -P '#{ENV['P12_PASSWORD']}' -o #{certs_dir}/distribucion.p12")
+      UI.message("Certificado exportado en #{certs_dir}")
+    rescue => e
+      UI.message("No se pudo exportar el p12: #{e}")
+    end
+
     # 2) perfil de App Store para SORA
     profile_path = get_provisioning_profile(
       api_key: api_key,
