@@ -19,9 +19,15 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>7</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>SORA usa la cámara solo si decides adjuntar una foto a tu consulta.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SORA usa el micrófono solo si eliges dictar tu pregunta en voz alta.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -45,11 +51,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>SORA usa el micrófono solo si eliges dictar tu pregunta en voz alta.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>SORA usa la cámara solo si decides adjuntar una foto a tu consulta.</string>
 </dict>
 </plist>
