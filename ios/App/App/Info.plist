@@ -51,7 +51,5 @@
 	<string>SORA usa el micrófono solo si eliges dictar tu pregunta en voz alta.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>SORA usa la cámara solo si decides adjuntar una foto a tu consulta.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>SORA no rastrea tu actividad entre apps.</string>
 </dict>
 </plist>
