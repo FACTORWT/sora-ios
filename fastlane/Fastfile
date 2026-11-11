@@ -14,14 +14,29 @@ platform :ios do
       in_house: false
     )
 
-    # 1) certificado: se guarda en artifact para reutilizarlo en el futuro
-    cert = get_certificates(
-      api_key: api_key,
-      team_id: "D695835P4T",
-      platform: "ios",
-      output_path: certs_dir
-    )
-    UI.message("Certificado: #{cert.class}")
+    # 1) certificado: si ya tenemos el p12 guardado lo importamos, si no lo creamos
+    require "base64"
+    if ENV['CERT_P12_BASE64'] && !ENV['CERT_P12_BASE64'].strip.empty?
+      UI.message("Importando certificado guardado")
+      FileUtils.mkdir_p(certs_dir)
+      p12_path = "#{certs_dir}/distribucion.p12"
+      File.binwrite(p12_path, Base64.decode64(ENV['CERT_P12_BASE64']))
+      sh("security create-keychain -p '' build.keychain || true")
+      sh("security set-keychain-settings -lut 21600 build.keychain")
+      sh("security unlock-keychain -p '' build.keychain")
+      sh("security import #{p12_path} -k build.keychain -P '#{ENV['P12_PASSWORD']}' -T /usr/bin/codesign -T /usr/bin/security")
+      sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k '' build.keychain")
+      sh("security list-keychains -d user -s build.keychain login.keychain-db")
+      sh("security find-identity -v -p codesigning build.keychain")
+    else
+      cert = get_certificates(
+        api_key: api_key,
+        team_id: "D695835P4T",
+        platform: "ios",
+        output_path: certs_dir
+      )
+      UI.message("Certificado: #{cert.class}")
+    end
 
     # exportar el certificado con su llave privada para reutilizarlo despues
     begin
