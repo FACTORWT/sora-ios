@@ -62,6 +62,7 @@ jobs:
           ls -la "$RUNNER_TEMP/profile" || true
 
       - name: Build and upload
+        timeout-minutes: 35
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
