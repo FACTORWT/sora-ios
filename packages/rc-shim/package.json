@@ -1,0 +1,10 @@
+{
+  "name": "sora-rc-shim",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mantiene instalado el plugin nativo de RevenueCat para que el build de iOS pueda cobrar suscripciones.",
+  "main": "index.js",
+  "dependencies": {
+    "@revenuecat/purchases-capacitor": "^8.0.0"
+  }
+}
