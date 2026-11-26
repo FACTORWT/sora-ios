@@ -52,6 +52,13 @@ jobs:
           cd ios/App
           pod install --repo-update
 
+      - name: Parchear SubscriptionPeriod ambiguo
+        run: |
+          F="ios/App/Pods/PurchasesHybridCommon/ios/PurchasesHybridCommon/PurchasesHybridCommon/StoreProduct+HybridAdditions.swift"
+          ls -la "$F"
+          perl -pi -e 's/(?<![\w.])SubscriptionPeriod(?![\w])/RevenueCat.SubscriptionPeriod/g' "$F"
+          echo "parches: $(grep -c 'RevenueCat.SubscriptionPeriod' "$F")"
+
       - name: Install fastlane
         run: gem install fastlane --no-document
 
