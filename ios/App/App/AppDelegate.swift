@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -46,4 +47,52 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+
+// SORA: fuerza que el login social/OAuth se abra DENTRO de la app (guia 4 de Apple).
+// El SDK web usa window.open con popup, que en WKWebView cae en Safari y rompe el flujo.
+class MainViewController: CAPBridgeViewController {
+
+    private var authFixInstalled = false
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        installAuthPopupFix()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        installAuthPopupFix()
+    }
+
+    private func installAuthPopupFix() {
+        guard !authFixInstalled else { return }
+        guard let wv = self.webView else { return }
+        authFixInstalled = true
+        let js = """
+        (function(){
+          if (window.__soraAuthFix) { return; }
+          window.__soraAuthFix = true;
+          var hosts = ["base44.com","appleid.apple.com","accounts.google.com","login.microsoftonline.com","facebook.com"];
+          var origOpen = window.open;
+          window.open = function(url, name, features){
+            try {
+              if (typeof url === "string" && url.indexOf("http") === 0) {
+                for (var i = 0; i < hosts.length; i++) {
+                  if (url.indexOf(hosts[i]) !== -1) {
+                    window.location.href = url;
+                    return window;
+                  }
+                }
+              }
+            } catch (e) {}
+            try { return origOpen ? origOpen.apply(window, arguments) : null; } catch (e2) { return null; }
+          };
+        })();
+        """
+        wv.configuration.userContentController.addUserScript(
+            WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+    }
 }
